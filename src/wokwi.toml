@@ -1,0 +1,4 @@
+[wokwi]
+version = 1
+firmware = 'test_esp32.elf'
+elf = 'path-to-your-firmware.elf'

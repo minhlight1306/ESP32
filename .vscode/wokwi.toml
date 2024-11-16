@@ -1,0 +1,4 @@
+[wokwi]
+version = 1
+firmware = 'test_esp32/flasher_args.json'
+elf = 'path-to-your-firmware.elf'
