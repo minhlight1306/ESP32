@@ -1,3 +1,5 @@
+#ifndef LOCK_DOOR_H
+#define LOCK_DOOR_H
 
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
@@ -41,3 +43,5 @@ void errored5Times();
 void addRFID();
 void delRFID();
 void delAllRFID();
+
+#endif // LOCK_DOOR_H

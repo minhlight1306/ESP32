@@ -1,16 +1,19 @@
+#ifndef SENSOR_H
+#define SENSOR_H
+
 #define BLYNK_TEMPLATE_ID "TMPL6qIHiFlyL"
 #define BLYNK_TEMPLATE_NAME "Gas detector"
 #define BLYNK_AUTH_TOKEN "6jPXx5C9nGfTjljoRc_pFUTT1gfjXGrS"
 
+// #include <BlynkSimpleEsp32.h>
 #include <Wire.h>
 #include <WiFiClient.h>
-// #include <BlynkSimpleEsp32.h>
 
 //define Blynk
 extern char auth[];
 extern char ssid[];
 extern char pass[];
-// extern BlynkTimer timer;
+//extern BlynkTimer timer;
 
 //gas sensor
 #define gas_sensor 34//A0
@@ -29,3 +32,5 @@ void sonicSensor();
 #define D0_light_sensor 33
 #define A0_light_sensor 13
 void lightSensor();
+
+#endif // SENSOR_H

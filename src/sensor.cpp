@@ -1,5 +1,6 @@
 #include <sensor.h>
 #include <lock_door.h>
+#include <BlynkSimpleEsp32.h>
 
 char auth[] = "6jPXx5C9nGfTjljoRc_pFUTT1gfjXGrS";
 char ssid[] = "Wi_MESH 2.4G";
@@ -20,7 +21,7 @@ void GASLevel() {
   int value = analogRead(gas_sensor);
   value = map(value, 0, 4095, 0, 100);
   //Serial.println(value);
-  //Blynk.virtualWrite(V0, value);
+  // Blynk.virtualWrite(V0, value);
 
   if (value >= 50) {
     digitalWrite(LED, HIGH);
