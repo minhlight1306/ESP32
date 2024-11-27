@@ -26,19 +26,19 @@ byte rowPins[ROWS] = {12, 14, 27, 26}; // connect to the row pinouts of the keyp
 byte colPins[COLS] = {25, 33, 32}; // connect to the column pinouts of the keypad
 Keypad keypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS);
 
-int addr = 0;
+// int addr = 0;
 char password[6] = "22222";
 char pass_default[6] = "12345";
-char mode_changePass[6] = "*#01*";
-char mode_resetPass[6] = "*#02*";
-char mode_hardReset[6] = "*****";
+char mode_changePass[6] = "*001#";
+char mode_resetPass[6] = "*002#";
+char mode_hardReset[6] = "*003#";
 char mode_addRFID[6] = "*101#";
 char mode_delRFID[6] = "*102#";
-char mode_delAllRFID[6] = "#####";
+char mode_delAllRFID[6] = "*103#";
 
-char data_input[6];
-char new_pass1[6];
-char new_pass2[6];
+char data_input[6]; // variable of data from rfid and keybad
+char new_pass1[6]; // variable of comparing changed pass
+char new_pass2[6]; // variable of comparing changed pass the second
 
 unsigned char in_num = 0, time_error = 0, isMode = 0;
 //init lcd i2c
@@ -49,7 +49,7 @@ MFRC522::MIFARE_Key key;
 byte nuidPICC[4];
 Servo sg90;
 
-void writeEpprom(char data[]){//viet du lieu xuong bo nho
+void writeEpprom(char data[]){ //viet du lieu xuong bo nho
     for (unsigned char i = 0; i < 5; i++){
         EEPROM.write(i, data[i]);
     }
@@ -68,23 +68,16 @@ void clear_data_input(){ // xoa gia tri nhap vao hien tai
     }
 }
 
-unsigned char isDataBuffer(char data[]) // Kiem tra buffer da co gia tri chua
-{
-    for (unsigned char i = 0; i < 5; i++)
-    {
-        if (data[i] == '\0')
-        {
-            return 0;
-        }
+unsigned char isDataBuffer(char data[]){ // Kiem tra buffer da co gia tri chua
+    for(unsigned char i = 0; i < 5; i++){
+        if(data[i] == '\0') return 0;
     }
     return 1;
 }
 
 bool compareData(char data1[], char data2[]){ // Kiem tra 2 cai buffer co giong nhau hay khong
     for (unsigned char i = 0; i < 5; i++){
-        if (data1[i] != data2[i]){
-            return false;
-        }
+        if (data1[i] != data2[i]) return false;
     }
     return true;
 }
@@ -226,7 +219,8 @@ void checkPass(){ // kiem tra password
         //     clear_data_input();
         //     index_t = 10;
         // }
-        else{//xu li loi
+        
+        else{ //xu li loi
             if (time_error == 2){
                 clear_data_input();
                 lcd.clear();
@@ -472,17 +466,14 @@ void resetPass(){
         }
     }
 }
-//not check
+
 ////////////////////////RFID/////////////////////////////
-unsigned char numberInput()
-{
+unsigned char numberInput(){
     char number[5];
     char count_i = 0;
-    while (count_i < 2)
-    {
+    while(count_i < 2){
         char key = keypad.getKey();
-        if (key && key != '*' && key != '#')
-        {
+        if(key && key != '*' && key != '#'){
             delay(100);
             lcd.setCursor(10 + count_i, 1);
             lcd.print(key);
@@ -494,42 +485,40 @@ unsigned char numberInput()
 }
 
 //print hex rfid
-void printHex(byte *buffer, byte bufferSize)
-{
-    for (byte i = 0; i < bufferSize; i++)
-    {
+void printHex(byte *buffer, byte bufferSize){
+    for (byte i = 0; i < bufferSize; i++){
         Serial.print(buffer[i] < 0x10 ? " 0" : " ");
         Serial.print(buffer[i], HEX);
     }
 }
 
 //print dec rfid
-void printDec(byte *buffer, byte bufferSize)
-{
-    for (byte i = 0; i < bufferSize; i++)
-    {
+void printDec(byte *buffer, byte bufferSize){
+    for (byte i = 0; i < bufferSize; i++){
         Serial.print(buffer[i] < 0x10 ? " 0" : " ");
         Serial.print(buffer[i], DEC);
     }
 }
 
-bool isAllowedRFIDTag(byte tag[])
-{
+//kiem tra co dung the khong
+bool isAllowedRFID(byte tag[]){
+    if(tag == NULL) return false;
     int count = 0;
-    for (int i = 10; i < 512; i += 4)
-    {
+    for(int i = 10; i < 50; i += 4){
+        byte storedTag[4];
         Serial.print("EEPROM: ");
-        for (int j = 0; j < 4; j++)
-        {
-            Serial.print(EEPROM.read(i + j), HEX);
-            if (tag[j] == EEPROM.read(i + j))
-            {
+        for(int j = 0; j < 4; j++){
+            storedTag[j] = EEPROM.read(i + j);
+            Serial.print(storedTag[j], HEX);
+        }
+        Serial.println();
+
+        for(int j = 0; j < 4; j++){
+            if(tag[j] == storedTag[j]){
                 count++;
             }
         }
-        Serial.println();
-        if (count == 4)
-        {
+        if(count == 4){
             return true;
         }
         count = 0;
@@ -537,32 +526,35 @@ bool isAllowedRFIDTag(byte tag[])
     return false;
 }
 
-void rfidCheck()
-{
-    if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial())
-    {
+//xu li kiem tra the
+void rfidCheck(){
+    if(rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()){
         byte rfidTag[4];
         Serial.print("RFID TAG: ");
-        for (byte i = 0; i < rfid.uid.size; i++)
-        {
+        if (rfid.uid.size > 4) {
+            Serial.println(F("UID size is too large."));
+            return;
+        }
+        for(byte i = 0; i < rfid.uid.size; i++){
             rfidTag[i] = rfid.uid.uidByte[i];
             Serial.print(rfidTag[i], HEX);
         }
         Serial.println();
 
-        if (isAllowedRFIDTag(rfidTag))
-        {
+        if(isAllowedRFID(rfidTag)){
             lcd.clear();
             index_t = 3;
         }
-        else
-        {
-            if (time_error == 2)
-            {
+        else{
+            if(time_error == 2){
                 lcd.clear();
                 index_t = 4;
             }
-            Serial.print("Error\n");
+            if(time_error == 4){
+                lcd.clear();
+                index_t = 5;
+            }
+            Serial.print("Error RFID\n");
             lcd.clear();
             lcd.setCursor(3, 1);
             lcd.print("WRONG RFID");
@@ -574,16 +566,15 @@ void rfidCheck()
     MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
     Serial.println(rfid.PICC_GetTypeName(piccType));
 
-    if (piccType != MFRC522::PICC_TYPE_MIFARE_MINI &&
+    if( piccType != MFRC522::PICC_TYPE_MIFARE_MINI &&   
         piccType != MFRC522::PICC_TYPE_MIFARE_1K &&
-        piccType != MFRC522::PICC_TYPE_MIFARE_4K)
-    {
+        piccType != MFRC522::PICC_TYPE_MIFARE_4K){
+
         Serial.println(F("Your tag is not of type MIFARE Classic."));
         return;
     }
 
-        for (byte i = 0; i < 4; i++)
-        {
+        for(byte i = 0; i < 4; i++){
             nuidPICC[i] = rfid.uid.uidByte[i];
         }
 
@@ -600,13 +591,11 @@ void rfidCheck()
     }
 }
 
-void addRFID()
-{
+void addRFID(){
     lcd.clear();
     lcd.setCursor(3, 0);
     lcd.print("ADD NEW RFID");
-    switch (MODE_RFID)
-    {
+    switch(MODE_RFID){
     case (MODE_ID_RFID_ADD):
     {
         Serial.print("ADD_IN");
@@ -614,14 +603,12 @@ void addRFID()
         lcd.print("Input Id: ");
         id_rf = numberInput();
         Serial.println(id_rf);
-        if (id_rf == 0)
-        { // ID #0 not allowed, try again!
+        if(id_rf == 0){ // ID #0 not allowed, try again!
             lcd.clear();
             lcd.setCursor(3, 1);
             lcd.print("ID ERROR");
         }
-        else
-        {
+        else{
             MODE_RFID = MODE_ID_RFID_FIRST;
         }
         delay(2000);
@@ -632,19 +619,16 @@ void addRFID()
         lcd.clear();
         lcd.setCursor(0, 1);
         lcd.print("   Put RFID    ");
-        if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial())
-        {
+        if(rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()){
             byte rfidTag[4];
             Serial.print("RFID TAG: ");
-            for (byte i = 0; i < rfid.uid.size; i++)
-            {
+            for(byte i = 0; i < rfid.uid.size; i++){
                 rfidTag[i] = rfid.uid.uidByte[i];
                 Serial.print(rfidTag[i], HEX);
             }
             Serial.println();
 
-            if (isAllowedRFIDTag(rfidTag))
-            {
+            if(isAllowedRFID(rfidTag)){
                 lcd.clear();
                 lcd.setCursor(1, 1);
                 lcd.print("RFID ADDED BF");
@@ -653,8 +637,7 @@ void addRFID()
                 lcd.clear();
                 MODE_RFID = MODE_ID_RFID_ADD;
             }
-            else
-            {
+            else{
                 MODE_RFID = MODE_ID_RFID_SECOND;
             }
             rfid.PICC_HaltA();
@@ -667,17 +650,14 @@ void addRFID()
         lcd.setCursor(0, 1);
         lcd.print("   Put Again    ");
         delay(1000);
-        if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial())
-        {
+        if(rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()){
             byte rfidTag[4];
             Serial.print("RFID TAG: ");
-            for (byte i = 0; i < rfid.uid.size; i++)
-            {
+            for(byte i = 0; i < rfid.uid.size; i++){
                 rfidTag[i] = rfid.uid.uidByte[i];
                 Serial.print(rfidTag[i], HEX);
             }
-            for (int i = 0; i < 4; i++)
-            {
+            for(int i = 0; i < 4; i++){
                 EEPROM.write(10 + (id_rf - 1) * 4 + i, rfidTag[i]);
                 EEPROM.commit();
                 Serial.println(EEPROM.read(10 + (id_rf - 1) * 4 + i), HEX);
@@ -698,8 +678,7 @@ void addRFID()
     }
 }
 
-void delRFID()
-{
+void delRFID(){
     char buffDisp[20];
     lcd.setCursor(1, 0);
     lcd.print("  DELETE RFID   ");
@@ -707,17 +686,14 @@ void delRFID()
     lcd.setCursor(0, 1);
     lcd.print("Input ID: ");
     id_rf = numberInput();
-    if (id_rf == 0)
-    { // ID #0 not allowed, try again!
+    if(id_rf == 0){ // ID #0 not allowed, try again!
         lcd.clear();
         lcd.setCursor(3, 1);
         lcd.print("ID ERROR");
         delay(2000);
     }
-    else
-    {
-        for (int i = 0; i < 4; i++)
-        {
+    else{
+        for(int i = 0; i < 4; i++){
             EEPROM.write(10 + (id_rf - 1) * 4 + i, '\0');
             EEPROM.commit();
             Serial.println(EEPROM.read(10 + (id_rf - 1) * 4 + i), HEX);
@@ -732,33 +708,26 @@ void delRFID()
     }
 }
 
-void delAllRFID()
-{
+void delAllRFID(){
     char key = keypad.getKey();
     lcd.setCursor(0, 0);
     lcd.print("CLEAR ALL RFID?");
-    if (key == '*')
-    {
+    if(key == '*'){
         isMode = 0;
     }
-    if (key == '#')
-    {
+    if(key == '#'){
         isMode = 1;
     }
-    if (isMode == 0)
-    {
+    if(isMode == 0){
         lcd.setCursor(0, 1);
         lcd.print("> Yes      No  ");
     }
-    if (isMode == 1)
-    {
+    if(isMode == 1){
         lcd.setCursor(0, 1);
         lcd.print("  Yes    > No  ");
     }
-    if (key == '0' && isMode == 0)
-    {
-        for (int i = 10; i < 512; i++)
-        {
+    if(key == '0' && isMode == 0){
+        for(int i = 10; i < 512; i++){
             EEPROM.write(i, '\0');
             EEPROM.commit();
             Serial.println(EEPROM.read(i), HEX);
@@ -769,8 +738,7 @@ void delAllRFID()
         index_t = 0;
         lcd.clear();
     }
-    if (key == '0' && isMode == 1)
-    {
+    if(key == '0' && isMode == 1){
         lcd.clear();
         index_t = 0;
     }

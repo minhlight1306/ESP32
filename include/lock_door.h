@@ -1,5 +1,5 @@
-#ifndef LOCK_DOOR_H
-#define LOCK_DOOR_H
+#ifndef lock_door_h
+#define lock_door_h
 
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
@@ -8,9 +8,8 @@
 #include <MFRC522.h>
 #include <ESP32Servo.h>
 
-
 //define cac chan cua esp32
-#define PIN_SG90 4 //pin servo
+#define PIN_SG90 17 //pin servo
 #define SS_PIN 5  // save slave in rfid
 #define RST_PIN 0 // reset in rfid
 #define LED 13
@@ -18,7 +17,6 @@
 
 extern unsigned char index_t;
 
-// extern int addr;
 extern char password[6];
 extern char pass_default[6];
 
