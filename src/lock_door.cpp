@@ -235,9 +235,6 @@ void checkPass(){ // kiem tra password
             lcd.print("WRONG PASSWORD");
             clear_data_input();
             time_error++;
-            digitalWrite(BUZZER, HIGH);
-            delay(1000);
-            digitalWrite(BUZZER, LOW);
             lcd.clear();
         }
     }
