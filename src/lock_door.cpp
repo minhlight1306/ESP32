@@ -49,9 +49,9 @@ MFRC522::MIFARE_Key key;
 byte nuidPICC[4];
 Servo sg90;
 
-void writeEpprom(char data[]){ //viet du lieu xuong bo nho
+void writeEpprom(char data_in[]){ //viet du lieu xuong bo nho
     for (unsigned char i = 0; i < 5; i++){
-        EEPROM.write(i, data[i]);
+        EEPROM.write(i, data_in[i]);
     }
     EEPROM.commit();
 }
@@ -68,9 +68,9 @@ void clear_data_input(){ // xoa gia tri nhap vao hien tai
     }
 }
 
-unsigned char isDataBuffer(char data[]){ // Kiem tra buffer da co gia tri chua
+unsigned char isDataBuffer(char data1[]){ // Kiem tra buffer da co gia tri chua
     for(unsigned char i = 0; i < 5; i++){
-        if(data[i] == '\0') return 0;
+        if(data1[i] == '\0') return 0;
     }
     return 1;
 }
@@ -233,6 +233,7 @@ void checkPass(){ // kiem tra password
             }
             lcd.setCursor(1, 1);
             lcd.print("WRONG PASSWORD");
+            delay(1000);
             clear_data_input();
             time_error++;
             lcd.clear();
@@ -245,13 +246,10 @@ void openDoor(){
     lcd.setCursor(1, 0);
     lcd.print("---OPENDOOR---");
     unsigned char pos;
-    // digitalWrite(BUZZER, HIGH);
-    delay(1000);
-    // digitalWrite(BUZZER, LOW);
     sg90.write(90);
-    digitalWrite(LED, HIGH);
+    digitalWrite(BUZZER, HIGH);
     delay(5000);
-    digitalWrite(LED, LOW);
+    digitalWrite(BUZZER, LOW);
     sg90.write(0);
     lcd.clear();
     index_t = 0;
@@ -262,27 +260,14 @@ void errored3Times(){
     lcd.setCursor(1, 0);
     lcd.print("WRONG 3 TIME");
     digitalWrite(BUZZER, HIGH);
-    Serial.println("buzzer is on");
     delay(3000);
     digitalWrite(BUZZER, LOW);
     lcd.setCursor(1, 1);
     lcd.print("Wait 1 minutes");
     delay(1000);
     lcd.clear();
-    // unsigned char minutes = 1;
     unsigned char seconds = 59;
-    // unsigned char i = 30;
-    // while(i > 0){
-    //     if(i == 1 && minute > 0){
-    //         minute--;
-    //         i = 59;
-    //     }
-    //     if(i == 1 && minute == 0){
-    //         break;
-    //     }
-    //     i--;
-    //     delay(1000);
-    // }
+
 //dem thoi gian cho
     while(seconds > 0){
     // Hien thoi gian con lai
@@ -312,12 +297,9 @@ void errored3Times(){
 //neu sai qua 5 lan => khoa cho den khi reset hard pass
 void errored5Times(){
     while(1){
-        // Serial.println("buzzer is on");
-        // digitalWrite(BUZZER, HIGH);
-        // delay(500);
-        // digitalWrite(BUZZER, LOW);
         lcd.setCursor(0, 4);
-        lcd.print("LOCKED");
+        lcd.print("DOOR LOCKED");
+        digitalWrite(BUZZER, HIGH);
         getData();
         if(isDataBuffer(data_input)){
             if(compareData(data_input, mode_hardReset)){
@@ -326,8 +308,6 @@ void errored5Times(){
                 writeEpprom(pass_default);
                 insertData(password, pass_default);
                 clear_data_input();
-                digitalWrite(BUZZER, HIGH);
-                delay(2000);
                 digitalWrite(BUZZER, LOW);
                 lcd.clear();
                 index_t = 0;
@@ -386,6 +366,8 @@ void changePass(){ // Thay doi pass
         lcd.setCursor(0, 0);
         lcd.print("- Mismatched -");
         delay(1000);
+        lcd.print("-- Unsuccess --");
+        delay(1000);
         lcd.clear();
         index_t = 0;
     }
@@ -408,23 +390,11 @@ void resetPass(){
                 switch(choise){
                     case 0:
                         lcd.setCursor(0, 1);
-                        lcd.print(">");
-                        lcd.setCursor(2, 1);
-                        lcd.print("YES");
-                        lcd.setCursor(9, 1);
-                        lcd.print(" ");
-                        lcd.setCursor(11, 1);
-                        lcd.print("NO");
+                        lcd.print("> Yes      No  ");
                         break;
                     case 1:
                         lcd.setCursor(0, 1);
-                        lcd.print(">");
-                        lcd.setCursor(2, 1);
-                        lcd.print("YES");
-                        lcd.setCursor(9, 1);
-                        lcd.print(" ");
-                        lcd.setCursor(11, 1);
-                        lcd.print("NO");
+                        lcd.print("  Yes    > No  ");
                         break;
                     default:
                         break;
@@ -528,10 +498,10 @@ void rfidCheck(){
     if(rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()){
         byte rfidTag[4];
         Serial.print("RFID TAG: ");
-        if (rfid.uid.size > 4) {
-            Serial.println(F("UID size is too large."));
-            return;
-        }
+        // if (rfid.uid.size > 4) {
+        //     Serial.println(F("UID size is too large."));
+        //     return;
+        // }
         for(byte i = 0; i < rfid.uid.size; i++){
             rfidTag[i] = rfid.uid.uidByte[i];
             Serial.print(rfidTag[i], HEX);
@@ -555,6 +525,8 @@ void rfidCheck(){
             lcd.clear();
             lcd.setCursor(3, 1);
             lcd.print("WRONG RFID");
+            digitalWrite(BUZZER, HIGH);
+            delay(1000);
             time_error++;
             delay(1000);
             lcd.clear();
@@ -589,13 +561,15 @@ void rfidCheck(){
 }
 
 void addRFID(){
-    lcd.clear();
-    lcd.setCursor(3, 0);
-    lcd.print("ADD NEW RFID");
+
     switch(MODE_RFID){
     case (MODE_ID_RFID_ADD):
     {
+        lcd.clear();
+        lcd.setCursor(3, 0);
+        lcd.print("ADD NEW RFID");
         Serial.print("ADD_IN");
+        delay(1000);
         lcd.setCursor(0, 1);
         lcd.print("Input Id: ");
         id_rf = numberInput();
@@ -640,13 +614,15 @@ void addRFID(){
             rfid.PICC_HaltA();
             rfid.PCD_StopCrypto1();
         }
+        else{
+            Serial.print("wrong rfid");
+        }
     }
     break;
     case MODE_ID_RFID_SECOND:
     {
         lcd.setCursor(0, 1);
         lcd.print("   Put Again    ");
-        delay(1000);
         if(rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()){
             byte rfidTag[4];
             Serial.print("RFID TAG: ");
@@ -699,6 +675,7 @@ void delRFID(){
         lcd.setCursor(0, 1);
         lcd.print(buffDisp);
         Serial.print("DEL_OUT");
+        digitalWrite(BUZZER, HIGH);
         delay(2000);
         lcd.clear();
         index_t = 0;
@@ -709,20 +686,42 @@ void delAllRFID(){
     char key = keypad.getKey();
     lcd.setCursor(0, 0);
     lcd.print("CLEAR ALL RFID?");
+    // if(key == '*'){
+    //     if(isMode = 1){
+    //         isMode = 0;
+    //     }
+    //     else{
+    //         isMode++;
+    //     }
+    // }
+    switch(isMode){
+        case 0:
+            lcd.setCursor(0, 1);
+            lcd.print("> Yes      No  ");
+            break;
+        case 1:
+            lcd.setCursor(0, 1);
+            lcd.print("  Yes    > No  ");
+            break;
+        default:
+            break;
+    }
     if(key == '*'){
-        isMode = 0;
+        if(isMode == 1){
+            isMode = 0;
+        }
+        else{
+            isMode++;
+        }
     }
-    if(key == '#'){
-        isMode = 1;
-    }
-    if(isMode == 0){
-        lcd.setCursor(0, 1);
-        lcd.print("> Yes      No  ");
-    }
-    if(isMode == 1){
-        lcd.setCursor(0, 1);
-        lcd.print("  Yes    > No  ");
-    }
+    // if(isMode == 0){
+    //     lcd.setCursor(0, 1);
+    //     lcd.print("> Yes      No  ");
+    // }
+    // if(isMode == 1){
+    //     lcd.setCursor(0, 1);
+    //     lcd.print("  Yes    > No  ");
+    // }
     if(key == '0' && isMode == 0){
         for(int i = 10; i < 512; i++){
             EEPROM.write(i, '\0');
@@ -731,9 +730,10 @@ void delAllRFID(){
         }
         lcd.setCursor(0, 1);
         lcd.print("  Clear done  ");
+        digitalWrite(BUZZER, HIGH);
         delay(2000);
-        index_t = 0;
         lcd.clear();
+        index_t = 0;
     }
     if(key == '0' && isMode == 1){
         lcd.clear();

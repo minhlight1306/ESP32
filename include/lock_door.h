@@ -13,7 +13,7 @@
 #define SS_PIN 5  // save slave in rfid
 #define RST_PIN 0 // reset in rfid
 #define LED 13
-#define BUZZER 4 //buzzer pin
+#define BUZZER 16 //buzzer pin
 
 extern unsigned char index_t;
 
