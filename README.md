@@ -33,7 +33,7 @@ FACULTY OF COMPUTER SCIENCE AND ENGINEERING
 
 ## Cấu trúc của ĐATKLL:
 ```
- ┣ 📂.vscode         # Chứa file .json của VSCode, không ảnh hưởng tới bài tập lớn này.
+ ┣ 📂.vscode        # Chứa file .json của VSCode, không ảnh hưởng tới bài tập lớn này.
  ┣ 📂include        # Các file header.
  ┣ 📂lib            # 
  ┣ 📂src            # File code.
