@@ -39,6 +39,7 @@ FACULTY OF COMPUTER SCIENCE AND ENGINEERING
  ┣ 📂src            # File code.
  ┣ 📂test           # 
  ┣ 📂platformio.ini # init của hệ thống.
+ ┣ 📂DATKLL.pdf # report của sản phẩm.
  ┣ 📜README.md      #
 ```
 
