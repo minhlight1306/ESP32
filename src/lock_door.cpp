@@ -90,55 +90,7 @@ void insertData(char data1[], char data2[]){ // Gan buffer 2 cho buffer 1
 
 void getData(){ // Nhan buffer tu ban phim
     char key = keypad.getKey(); // Doc gia tri ban phim
-    // if (key){
-    //     if (in_num == 0){
-    //         data_input[0] = key;
-    //         lcd.setCursor(5, 1);
-    //         lcd.print(data_input[0]);
-    //         delay(200);
-    //         lcd.setCursor(5, 1);
-    //         lcd.print("*");
-    //     }
-    //     if (in_num == 1){
-    //         data_input[1] = key;
-    //         lcd.setCursor(6, 1);
-    //         lcd.print(data_input[1]);
-    //         delay(200);
-    //         lcd.setCursor(6, 1);
-    //         lcd.print("*");
-    //     }
-    //     if (in_num == 2){
-    //         data_input[2] = key;
-    //         lcd.setCursor(7, 1);
-    //         lcd.print(data_input[2]);
-    //         delay(200);
-    //         lcd.setCursor(7, 1);
-    //         lcd.print("*");
-    //     }
-    //     if (in_num == 3){
-    //         data_input[3] = key;
-    //         lcd.setCursor(8, 1);
-    //         lcd.print(data_input[3]);
-    //         delay(200);
-    //         lcd.setCursor(8, 1);
-    //         lcd.print("*");
-    //     }
-    //     if (in_num == 4){
-    //         data_input[4] = key;
-    //         lcd.setCursor(9, 1);
-    //         lcd.print(data_input[4]);
-    //         delay(200);
-    //         lcd.setCursor(9, 1);
-    //         lcd.print("*");
-    //     }
-    //     if (in_num == 4){
-    //         Serial.println(data_input);
-    //         in_num = 0;
-    //     }
-    //     else{
-    //         in_num++;
-    //     }
-    // }
+
     if (key) {
         if (in_num < 5) { // kiem tra so luong ky tu
             data_input[in_num] = key;
@@ -182,18 +134,7 @@ void checkPass(){ // kiem tra password
             clear_data_input();
             index_t = 3;//truong hop dung pass
         }
-        // else if (compareData(data_input, mode_changePass)){
-        //     // Serial.print("mode_changePass");
-        //     lcd.clear();
-        //     clear_data_input();
-        //     index_t = 1;
-        // }
-        // else if (compareData(data_input, mode_resetPass)){
-        //     // Serial.print("mode_resetPass");
-        //     lcd.clear();
-        //     clear_data_input();
-        //     index_t = 2;
-        // }
+
         else if(compareData(data_input, mode_hardReset)){
             lcd.setCursor(0, 0);
             lcd.print("---HardReset---");
@@ -273,21 +214,13 @@ void errored3Times(){
     // Hien thoi gian con lai
         lcd.setCursor(1, 1);
         lcd.print("Wait ");
-        // lcd.print(minutes);
-        // lcd.print(" : ");
+
         lcd.print(seconds < 10 ? "0" : ""); // Thêm số 0 ở trước nếu giây < 10
         lcd.print(seconds);
 
         // Delay 1 giay
         delay(1000);
 
-        // Cap nhat giay
-        // if(seconds == 0){
-        //     if (minutes > 0) {
-        //         minutes--;
-        //         seconds = 59;
-        //     }
-        // } 
         seconds--; // Giảm giây
     }
     lcd.clear();
@@ -300,19 +233,39 @@ void errored5Times(){
         lcd.setCursor(0, 4);
         lcd.print("DOOR LOCKED");
         digitalWrite(BUZZER, HIGH);
-        getData();
-        if(isDataBuffer(data_input)){
-            if(compareData(data_input, mode_hardReset)){
-                lcd.setCursor(0, 0);
-                lcd.print("-- HardReset --");
-                writeEpprom(pass_default);
-                insertData(password, pass_default);
-                clear_data_input();
-                digitalWrite(BUZZER, LOW);
-                lcd.clear();
-                index_t = 0;
-                break;
+
+        if(rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()){
+            byte rfidTag[4];
+            Serial.print("RFID TAG: ");
+
+            for(byte i = 0; i < rfid.uid.size; i++){
+                rfidTag[i] = rfid.uid.uidByte[i];
+                Serial.print(rfidTag[i], HEX);
             }
+            Serial.println();
+
+            if(isAllowedRFID(rfidTag)){
+                lcd.clear();
+                index_t = 3;
+            }
+            Serial.print(F("PICC type: "));
+            MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
+            Serial.println(rfid.PICC_GetTypeName(piccType));
+
+            for(byte i = 0; i < 4; i++){
+                nuidPICC[i] = rfid.uid.uidByte[i];
+            }
+
+            Serial.println(F("The NUID tag is:"));
+            Serial.print(F("In hex: "));
+            printHex(rfid.uid.uidByte, rfid.uid.size);
+            Serial.println();
+            Serial.print(F("In dec: "));
+            printDec(rfid.uid.uidByte, rfid.uid.size);
+            Serial.println();
+
+            rfid.PICC_HaltA();
+            rfid.PCD_StopCrypto1();
         }
     }
 }

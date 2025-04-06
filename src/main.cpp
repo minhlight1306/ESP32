@@ -162,10 +162,9 @@ void setup()
     pinMode(data_temperature_sensor, INPUT);
     pinMode(BUZZER, OUTPUT);
     pinMode(LED_2, OUTPUT);
-//   lcd.print("begin");
+
 // //Blynk init
 //     Blynk.begin(auth, ssid, pass, "blynk.cloud", 80);
-//     lcd.print("end");
 }
 
 void loop()
